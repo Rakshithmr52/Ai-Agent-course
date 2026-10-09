@@ -55,8 +55,8 @@ jobs:
     - name: Check chatbot folder structure
       run: |
         su vscode -c '
-        echo "Checking chatbot folder contains only __init__.py and nutrition_agent.py..."
-        file_count=$(find ./chatbot -type f ! -name "__pycache__" | wc -l)
+        echo "Checking chatbot folder contains __init__.py and nutrition_agent.py..."
+        file_count=$(find ./chatbot -maxdepth 1 -type f ! -name "__pycache__" | wc -l)
         if [ "$file_count" -ne 2 ]; then
           echo "Error: chatbot folder must contain exactly 2 files: __init__.py and nutrition_agent.py"
           find ./chatbot -type f
@@ -64,6 +64,10 @@ jobs:
         fi
         if [ ! -f "./chatbot/__init__.py" ] || [ ! -f "./chatbot/nutrition_agent.py" ]; then
           echo "Error: chatbot folder must contain __init__.py and nutrition_agent.py"
+          exit 1
+        fi
+        if [ ! -f "./chatbot/.chainlit/config.toml" ]; then
+          echo "Error: chatbot folder must contain .chainlit/config.toml"
           exit 1
         fi
         echo "✓ chatbot folder structure is correct"
@@ -80,6 +84,14 @@ jobs:
         fi
         if ! diff -q ./chatbot/nutrition_agent.py ./chatbot_complete/nutrition_agent.py; then
           echo "Error: chatbot/nutrition_agent.py does not match chatbot_complete/nutrition_agent.py"
+          exit 1
+        fi
+        if ! diff -q ./chatbot/.chainlit/config.toml ./chatbot_complete/.chainlit/config.toml; then
+          echo "Error: chatbot Chainlit config does not match chatbot_complete Chainlit config"
+          exit 1
+        fi
+        if ! grep -q "^[[:space:]]*logo_file_url[[:space:]]*=" ./chatbot/.chainlit/config.toml; then
+          echo "Error: chatbot Chainlit config does not set a logo"
           exit 1
         fi
         echo "✓ chatbot files match chatbot_complete versions"
